@@ -5,6 +5,8 @@ $(document).ready(function(){
 
 var cardapio= {};
 
+var NUMERO_ENVIO = '5583996779043'
+
 var MEU_CARRINHO = [];
 
 var MEU_ENDERECO = null;
@@ -16,9 +18,9 @@ cardapio.eventos= {
 
     //quando inicializar a tela
     init: () => {
-        console.log('Iniciou');
-
         cardapio.metodos.obterItensCardapio();
+        cardapio.metodos.carregarBotaoLigar();
+        cardapio.metodos.carregarBotaoReserva();
     }
 }
 
@@ -481,6 +483,73 @@ cardapio.metodos = {
 
         $("#resumoEndereco").html(`${MEU_ENDERECO.endereco}, ${MEU_ENDERECO.numero}, ${MEU_ENDERECO.bairro}`);
         $("#cidadeEndereco").html(`${MEU_ENDERECO.cidade} - ${MEU_ENDERECO.uf} / ${MEU_ENDERECO.cep} ${MEU_ENDERECO.complemento}`);
+
+        cardapio.metodos.finalizarPedido();
+    },
+
+    //atualiza link do botão do whatsapp/envio
+    finalizarPedido: () => {
+
+        if(MEU_CARRINHO.length > 0 && MEU_ENDERECO != null){
+
+            var texto = 'Olá, gostaria de fazer um pedido:\n';
+            texto += `\n*Itens do pedido:*\n\n\${itens}`;
+            texto += '\n*Endereço de entrega:*';
+            texto += `\n${MEU_ENDERECO.endereco}, ${MEU_ENDERECO.numero}, ${MEU_ENDERECO.bairro}`;
+            texto += `\n${MEU_ENDERECO.cidade} - ${MEU_ENDERECO.uf} / ${MEU_ENDERECO.cep} ${MEU_ENDERECO.complemento}`;
+            texto += `\n\n*Total (com entrega): R$ ${(VALOR_CARRINHO + VALOR_ENTREGA).toFixed(2).replace('.',',')}*`;
+
+            var itens = '';
+
+            $.each(MEU_CARRINHO, (i, e) => {
+                itens += `*${e.qntd}x* ${e.name} ....... R$ ${e.price.toFixed(2).replace('.',',')} \n`;
+
+                //ultimo item
+                if((i +1) == MEU_CARRINHO.length){
+                    texto = texto.replace(/\${itens}/g, itens)
+
+                    //converter texto em URL
+                    let encodeTexto = encodeURI(texto);
+                    let URL = `https://wa.me/${NUMERO_ENVIO}?text=${encodeTexto}`;
+
+                    $("#btnEtapaResumo").attr('href',URL);
+                }
+            })
+
+        }
+
+    },
+
+    //carrega link do botao reserva
+    carregarBotaoReserva: () => {
+
+        var texto = 'Olá gostaria de fazer uma *reserva*.';
+
+        let encode = encodeURI(texto)
+        let URL = `https://wa.me/${NUMERO_ENVIO}?text=${encodeTexto}`;
+
+        $("#btnReserva").attr('href',URL);
+
+    },
+
+    //carrega botão de ligar
+    carregarBotaoLigar: () => {
+        $("#btnLigar").attr('href', `tel:${NUMERO_ENVIO}`)
+    },
+
+    //abre depoimento mediante clique
+    abrirDepoimento: (depoimento) => {
+        $("#depoimento-1").addClass('hidden');
+        $("#depoimento-2").addClass('hidden');
+        $("#depoimento-3").addClass('hidden');
+
+        $("#btnDepoimento-1").removeClass('active');
+        $("#btnDepoimento-2").removeClass('active');
+        $("#btnDepoimento-3").removeClass('active');
+
+        $("#depoimento-" + depoimento).removeClass('hidden');
+        $("#btnDepoimento-" + depoimento).addClass('active');
+
     },
 
     //exibir mensagem personalizada
@@ -512,7 +581,7 @@ cardapio.metodos = {
 cardapio.templates = {
 
     item: `
-        <div class="col-3 mb-4">
+        <div class="col-3 mb-4 wow fadeInUp">
             <div class="card card-item" id="\${id}">
                 <div class="img-produto">
                     <img src="\${img}" alt="">
