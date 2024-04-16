@@ -1,147 +1,140 @@
-//depois de pronto, executa a função generalista abaixo
-$(document).ready(function(){
+$(document).ready(function () {
     cardapio.eventos.init();
 })
 
-var cardapio= {};
-
-var NUMERO_ENVIO = '5583996779043'
+var cardapio = {};
 
 var MEU_CARRINHO = [];
-
 var MEU_ENDERECO = null;
 
 var VALOR_CARRINHO = 0;
-var VALOR_ENTREGA = 5;
+var VALOR_ENTREGA = 7.5;
 
-cardapio.eventos= {
+var CELULAR_EMPRESA = '5583996779043';
 
-    //quando inicializar a tela
+cardapio.eventos = {
+
     init: () => {
         cardapio.metodos.obterItensCardapio();
         cardapio.metodos.carregarBotaoLigar();
         cardapio.metodos.carregarBotaoReserva();
     }
+
 }
 
 cardapio.metodos = {
 
-    //pega itens do cardapio por filtragem - inicial com burgers
+    // obtem a lista de itens do cardápio
     obterItensCardapio: (categoria = 'burgers', vermais = false) => {
 
         var filtro = MENU[categoria];
+        console.log(filtro);
 
-        if(!vermais){
+        if (!vermais) {
             $("#itensCardapio").html('');
+            $("#btnVerMais").removeClass('hidden');
         }
 
-        //e = elemento
-        $.each(filtro, (i,e) => {
+        $.each(filtro, (i, e) => {
 
-            //carrega template de item + regex no replace
-            let temp = cardapio.templates.item.replace(/\${img}/g,e.img)
-            .replace(/\${nome}/g,e.name)
-            .replace(/\${preco}/g,e.price.toFixed(2).replace('.',','))
-            .replace(/\${id}/g,e.id);
+            let temp = cardapio.templates.item.replace(/\${img}/g, e.img)
+            .replace(/\${nome}/g, e.name)
+            .replace(/\${preco}/g, e.price.toFixed(2).replace('.', ','))
+            .replace(/\${id}/g, e.id)
 
-            //validando se clicou no ver mais e exibir os 4 ultimos itens - 12 itens
-            if(vermais && i >= 8 && i< 12){
-                $("#itensCardapio").append(temp);
+            // botão ver mais foi clicado (12 itens)
+            if (vermais && i >= 8 && i < 12) {
+                $("#itensCardapio").append(temp)
             }
 
-            //mostrar os itens iniciais
-            if(!vermais && i < 8){
-                $("#itensCardapio").append(temp);
+            // paginação inicial (8 itens)
+            if (!vermais && i < 8) {
+                $("#itensCardapio").append(temp)
             }
 
         })
 
-        //remover classe active e hidden
+        // remove o ativo
         $(".container-menu a").removeClass('active');
-        $("#btnVerMais").removeClass("hidden");
 
-        //adicionar classe active para categoria clicada
-        $("#menu-"+categoria).addClass("active");
-        
+        // seta o menu para ativo
+        $("#menu-" + categoria).addClass('active')
+
     },
 
-    //clique no botão de ver mais
+    // clique no botão de ver mais
     verMais: () => {
 
-        //descobrir qual categoria está ativa antes de mostrar mais
-        var ativo = $(".container-menu a.active").attr('id').split('menu-')[1]//split para remover o menu- e retornar somente a categoria;
-
+        var ativo = $(".container-menu a.active").attr('id').split('menu-')[1];
         cardapio.metodos.obterItensCardapio(ativo, true);
 
-        $("#btnVerMais").addClass("hidden");
+        $("#btnVerMais").addClass('hidden');
+
     },
 
-    //diminuir quantidade do item no cardapio
+    // diminuir a quantidade do item no cardapio
     diminuirQuantidade: (id) => {
-        //pega quantidade do item
-        let qntdAtual = parseInt($("#qntd-"+id).text());
 
-        if(qntdAtual > 0){
-            $("#qntd-"+id).text(qntdAtual-1);
+        let qntdAtual = parseInt($("#qntd-" + id).text());
+
+        if (qntdAtual > 0) {
+            $("#qntd-" + id).text(qntdAtual - 1)
         }
+
     },
 
-    //aumentar quantidade do item no cardapio
+    // aumentar a quantidade do item no cardapio
     aumentarQuantidade: (id) => {
 
-        //pega quantidade do item
-        let qntdAtual = parseInt($("#qntd-"+id).text());
-        $("#qntd-"+id).text(qntdAtual+1);
+        let qntdAtual = parseInt($("#qntd-" + id).text());
+        $("#qntd-" + id).text(qntdAtual + 1)
+
     },
 
-    //adicionar item ao carrinho
+    // adicionar ao carrinho o item do cardápio
     adicionarAoCarrinho: (id) => {
 
-        let qntdAtual = parseInt($("#qntd-"+id).text());
+        let qntdAtual = parseInt($("#qntd-" + id).text());
 
-        if(qntdAtual > 0){
+        if (qntdAtual > 0) {
 
-            //obter a categoria ativa
-            var categoria = $(".container-menu a.active").attr('id').split('menu-')[1]//split para remover o menu- e retornar somente a categoria;
+            // obter a categoria ativa
+            var categoria = $(".container-menu a.active").attr('id').split('menu-')[1];
 
-            //obter lista de items
+            // obtem a lista de itens
             let filtro = MENU[categoria];
 
-            //pegar o item
-            let item = $.grep(filtro, (e,i) => {
-                return e.id == id
-            });
+            // obtem o item
+            let item = $.grep(filtro, (e, i) => { return e.id == id });
 
-            //verificar se existe o item
-            if(item.length > 0){
+            if (item.length > 0) {
 
-                //validar se ja existe item, antes de adicionar ou remover do carrinho
-                let existe = $.grep(MEU_CARRINHO, (elem,index) => {
-                    return elem.id == id
-                });
+                // validar se já existe esse item no carrinho
+                let existe = $.grep(MEU_CARRINHO, (elem, index) => { return elem.id == id });
 
-                //caso já exista, só altera a quantidade, senão adiciona o item
-                if(existe.length > 0){
-                    //pega objeto em questão
+                // caso já exista o item no carrinho, só altera a quantidade
+                if (existe.length > 0) {
                     let objIndex = MEU_CARRINHO.findIndex((obj => obj.id == id));
-                    MEU_CARRINHO[objIndex].qntd += qntdAtual;
-                }else{
-                    //pega quantidade de itens para adicionar no carrinho via push juntamente com o elemento "quantidade" no objeto
-                    item[0].qntd = qntdAtual;
-                    MEU_CARRINHO.push(item[0]);
+                    MEU_CARRINHO[objIndex].qntd = MEU_CARRINHO[objIndex].qntd + qntdAtual;
                 }
-
-                cardapio.metodos.mensagem('Item Adicionado no Carrinho','green','5000');
-                //volta qntd para zero
-                $("#qntd-"+id).text(0);
+                // caso ainda não exista o item no carrinho, adiciona ele 
+                else {
+                    item[0].qntd = qntdAtual;
+                    MEU_CARRINHO.push(item[0])
+                }      
+                
+                cardapio.metodos.mensagem('Item adicionado ao carrinho', 'green')
+                $("#qntd-" + id).text(0);
 
                 cardapio.metodos.atualizarBadgeTotal();
 
             }
+
         }
+
     },
 
-    //atualizar valores da badge de carrinho
+    // atualiza o badge de totais dos botões "Meu carrinho"
     atualizarBadgeTotal: () => {
 
         var total = 0;
@@ -150,263 +143,262 @@ cardapio.metodos = {
             total += e.qntd
         })
 
-        //valida se tem algo no carrinho, se tiver mostra, senao remove
-        if(total > 0){
+        if (total > 0) {
             $(".botao-carrinho").removeClass('hidden');
             $(".container-total-carrinho").removeClass('hidden');
-        }else{
-            $(".botao-carrinho").addClass('hidden');
+        }
+        else {
+            $(".botao-carrinho").addClass('hidden')
             $(".container-total-carrinho").addClass('hidden');
         }
-        //adiciona o total a div
+
         $(".badge-total-carrinho").html(total);
 
     },
 
-    //Abrir a modal de carrinho e produtos
+    // abrir a modal de carrinho
     abrirCarrinho: (abrir) => {
 
-        if(abrir){
+        if (abrir) {
             $("#modalCarrinho").removeClass('hidden');
             cardapio.metodos.carregarCarrinho();
-        }else{
+        }
+        else {
             $("#modalCarrinho").addClass('hidden');
-
         }
 
     },
 
-    //altera os textos e exibe botões de proximas etapas
+    // altera os texto e exibe os botões das etapas
     carregarEtapa: (etapa) => {
 
-        if (etapa == 1){
-            //alterando titulo da etapa
-            $("#lblTituloEtapa").text("Seu Carrinho:");
-            //mostrando etapa
-            $("#itensCarrinho").removeClass("hidden");
-            //escondendo demais etapas
-            $("#localEntrega").addClass("hidden");
-            $("#resumoCarrinho").addClass("hidden");
-            //alterando icones de etapa
-            $(".etapa").removeClass("active");
-            $(".etapa1").addClass("active");
-            //alterando botões
-            $("#btnEtapaPedido").removeClass("hidden");
-            $("#btnEtapaEndereco").addClass("hidden");
-            $("#btnEtapaResumo").addClass("hidden");
-            $("#btnVoltar").addClass("hidden");
+        if (etapa == 1) {
+            $("#lblTituloEtapa").text('Seu carrinho:');
+            $("#itensCarrinho").removeClass('hidden');
+            $("#localEntrega").addClass('hidden');
+            $("#resumoCarrinho").addClass('hidden');
+
+            $(".etapa").removeClass('active');
+            $(".etapa1").addClass('active');
+
+            $("#btnEtapaPedido").removeClass('hidden');
+            $("#btnEtapaEndereco").addClass('hidden');
+            $("#btnEtapaResumo").addClass('hidden');
+            $("#btnVoltar").addClass('hidden');
+        }
+        
+        if (etapa == 2) {
+            $("#lblTituloEtapa").text('Endereço de entrega:');
+            $("#itensCarrinho").addClass('hidden');
+            $("#localEntrega").removeClass('hidden');
+            $("#resumoCarrinho").addClass('hidden');
+
+            $(".etapa").removeClass('active');
+            $(".etapa1").addClass('active');
+            $(".etapa2").addClass('active');
+
+            $("#btnEtapaPedido").addClass('hidden');
+            $("#btnEtapaEndereco").removeClass('hidden');
+            $("#btnEtapaResumo").addClass('hidden');
+            $("#btnVoltar").removeClass('hidden');
         }
 
-        if(etapa == 2){
-            $("#lblTituloEtapa").text("Endereço de Entrega:");
-            $("#itensCarrinho").addClass("hidden");
-            $("#localEntrega").removeClass("hidden");
-            $("#resumoCarrinho").addClass("hidden");
-            $(".etapa").removeClass("active");
-            $(".etapa1").addClass("active");
-            $(".etapa2").addClass("active");
-            $("#btnEtapaPedido").addClass("hidden");
-            $("#btnEtapaEndereco").removeClass("hidden");
-            $("#btnEtapaResumo").addClass("hidden");
-            $("#btnVoltar").removeClass("hidden");
-        }
+        if (etapa == 3) {
+            $("#lblTituloEtapa").text('Resumo do pedido:');
+            $("#itensCarrinho").addClass('hidden');
+            $("#localEntrega").addClass('hidden');
+            $("#resumoCarrinho").removeClass('hidden');
 
-        if(etapa == 3){
-            $("#lblTituloEtapa").text("Resumo do Pedido:");
-            $("#itensCarrinho").addClass("hidden");
-            $("#localEntrega").addClass("hidden");
-            $("#resumoCarrinho").removeClass("hidden");
-            $(".etapa").removeClass("active");
-            $(".etapa1").addClass("active");
-            $(".etapa2").addClass("active");
-            $(".etapa3").addClass("active");
-            $("#btnEtapaPedido").addClass("hidden");
-            $("#btnEtapaEndereco").addClass("hidden");
-            $("#btnEtapaResumo").removeClass("hidden");
-            $("#btnVoltar").removeClass("hidden");
+            $(".etapa").removeClass('active');
+            $(".etapa1").addClass('active');
+            $(".etapa2").addClass('active');
+            $(".etapa3").addClass('active');
+
+            $("#btnEtapaPedido").addClass('hidden');
+            $("#btnEtapaEndereco").addClass('hidden');
+            $("#btnEtapaResumo").removeClass('hidden');
+            $("#btnVoltar").removeClass('hidden');
         }
 
     },
 
-    //volta uma etapa
+    // botão de voltar etapa
     voltarEtapa: () => {
 
-        //pega o tamanho de etapas com classe active. Cada classe ativa conta um
         let etapa = $(".etapa.active").length;
-
-        //pega a etapa e volta uma.
         cardapio.metodos.carregarEtapa(etapa - 1);
 
     },
 
-    //carrega a lista de itens dos carrinho
+    // carrega a lista de itens do carrinho
     carregarCarrinho: () => {
-        //inicia a etapa inicial
+
         cardapio.metodos.carregarEtapa(1);
 
-        if(MEU_CARRINHO.length > 0){
-            //limpa antes de carregar
+        if (MEU_CARRINHO.length > 0) {
+
             $("#itensCarrinho").html('');
 
             $.each(MEU_CARRINHO, (i, e) => {
 
-                let temp = cardapio.templates.itemCarrinho.replace(/\${img}/g,e.img)
-                .replace(/\${nome}/g,e.name)
-                .replace(/\${preco}/g,e.price.toFixed(2).replace('.',','))
-                .replace(/\${id}/g,e.id)
-                .replace(/\${qntd}/g,e.qntd);
+                let temp = cardapio.templates.itemCarrinho.replace(/\${img}/g, e.img)
+                .replace(/\${nome}/g, e.name)
+                .replace(/\${preco}/g, e.price.toFixed(2).replace('.', ','))
+                .replace(/\${id}/g, e.id)
+                .replace(/\${qntd}/g, e.qntd)
 
                 $("#itensCarrinho").append(temp);
 
-                //ultimo item do carrinho, atualiza valores...
-                if((i + 1) == MEU_CARRINHO.length){
+                // último item
+                if ((i + 1) == MEU_CARRINHO.length) {
                     cardapio.metodos.carregarValores();
                 }
+
             })
-        }else{
-            $("#itensCarrinho").html('<p class="carrinho-vazio"><i class="fa fa-shopping-bag"></i> Seu carrinho está vazio!</p>');
+
+        }
+        else {
+            $("#itensCarrinho").html('<p class="carrinho-vazio"><i class="fa fa-shopping-bag"></i> Seu carrinho está vazio.</p>');
             cardapio.metodos.carregarValores();
         }
+
     },
 
-    //diminui a quantidade de itens na lista do carrinho
-    diminuirQuantidadeCarrinho: (id) =>{
+    // diminuir quantidade do item no carrinho
+    diminuirQuantidadeCarrinho: (id) => {
 
-        //pega a quantidade do item no carrinho
-        let qntdAtual = parseInt($("#qntd-carrinho-"+id).text());
+        let qntdAtual = parseInt($("#qntd-carrinho-" + id).text());
 
-        //se for maior que um diminui, senao exclui da lista
-        if(qntdAtual > 1){
-            //atualiza a quantidade atual
-            $("#qntd-carrinho-"+id).text(qntdAtual-1);
+        if (qntdAtual > 1) {
+            $("#qntd-carrinho-" + id).text(qntdAtual - 1);
             cardapio.metodos.atualizarCarrinho(id, qntdAtual - 1);
-        }else{
-            //remove item do carrinho
-            cardapio.metodos.removerItemCarrinho(id);
         }
+        else {
+            cardapio.metodos.removerItemCarrinho(id)
+        }
+
     },
 
-    //aumenta a quantidade de itens na lista do carrinho
-    aumentarQuantidadeCarrinho: (id) =>{
-        //pega a quantidade do item no carrinho
-        let qntdAtual = parseInt($("#qntd-carrinho-"+id).text());
-        //adiciona item no carrinho
-        $("#qntd-carrinho-"+id).text(qntdAtual+1);
+    // aumentar quantidade do item no carrinho
+    aumentarQuantidadeCarrinho: (id) => {
+
+        let qntdAtual = parseInt($("#qntd-carrinho-" + id).text());
+        $("#qntd-carrinho-" + id).text(qntdAtual + 1);
         cardapio.metodos.atualizarCarrinho(id, qntdAtual + 1);
+
     },
 
-    //remove o item do carrinho quando zerar quantidade ou quando clicar no X
+    // botão remover item do carrinho
     removerItemCarrinho: (id) => {
 
-        //filtra itens do carrinho
-        MEU_CARRINHO = $.grep(MEU_CARRINHO, (e, i) =>{
-            //retorna lista de itens que não tem o id passado, ou seja, remove somente o id passado.
-            return e.id != id;
-        })
-
-        //carrega novamente o carrinho atualizado
+        MEU_CARRINHO = $.grep(MEU_CARRINHO, (e, i) => { return e.id != id });
         cardapio.metodos.carregarCarrinho();
-        //atuializa badge novamente
+
+        // atualiza o botão carrinho com a quantidade atualizada
         cardapio.metodos.atualizarBadgeTotal();
+        
     },
 
-    //atualiza o carrinho com a quantidade atual
+    // atualiza o carrinho com a quantidade atual
     atualizarCarrinho: (id, qntd) => {
 
-        //pega o obj que está sendo falado, por meio do ID e atualiza a quantidade dele no carrinho
         let objIndex = MEU_CARRINHO.findIndex((obj => obj.id == id));
         MEU_CARRINHO[objIndex].qntd = qntd;
 
-        //atualiza na home o botão de shopping com qntd total atual e valor do pedido
+        // atualiza o botão carrinho com a quantidade atualizada
         cardapio.metodos.atualizarBadgeTotal();
+
+        // atualiza os valores (R$) totais do carrinho
         cardapio.metodos.carregarValores();
+
     },
 
-    //carrega os valores a depender dos itens do carrinho...
+    // carrega os valores de SubTotal, Entrega e Total
     carregarValores: () => {
 
         VALOR_CARRINHO = 0;
 
-        //redefine os valores
-        $("#lblSubTotal").text("R$ 0,00");
-        $("#lblValorEntrega").text("+ R$ 0,00");
-        $("#lblValorTotal").text("R$ 0,00");
+        $("#lblSubTotal").text('R$ 0,00');
+        $("#lblValorEntrega").text('+ R$ 0,00');
+        $("#lblValorTotal").text('R$ 0,00');
 
-        //percorre itens pra pegar valores
-        $.each(MEU_CARRINHO, (i,e) => {
-            //converte o valor pra float e coloca no valor do carrinho depois de multiplicar o valor dos itens pela quantidade
+        $.each(MEU_CARRINHO, (i, e) => {
+
             VALOR_CARRINHO += parseFloat(e.price * e.qntd);
 
-            //valida se é o ultimo item do carrinho... Se index atual for igual ao tamanho do carrinho é pq é o ultimo...
-            if((i + 1) == MEU_CARRINHO.length){
-                //dando toFixed e replace para colocar mascara de reais
-                $("#lblSubTotal").text(`R$ ${VALOR_CARRINHO.toFixed(2).replace('.',',')}`);
-                $("#lblValorEntrega").text(`+ R$ ${VALOR_ENTREGA.toFixed(2).replace('.',',')}`);
-                $("#lblValorTotal").text(`R$ ${(VALOR_CARRINHO+VALOR_ENTREGA).toFixed(2).replace('.',',')}`);
+            if ((i + 1) == MEU_CARRINHO.length) {
+                $("#lblSubTotal").text(`R$ ${VALOR_CARRINHO.toFixed(2).replace('.', ',')}`);
+                $("#lblValorEntrega").text(`+ R$ ${VALOR_ENTREGA.toFixed(2).replace('.', ',')}`);
+                $("#lblValorTotal").text(`R$ ${(VALOR_CARRINHO + VALOR_ENTREGA).toFixed(2).replace('.', ',')}`);
             }
+
         })
 
     },
 
-    //carrega endereço via api
+    // carregar a etapa enderecos
     carregarEndereco: () => {
 
-        if(MEU_CARRINHO.length <= 0){
-            cardapio.metodos.mensagem('Seu carrinho está vazio!')
+        if (MEU_CARRINHO.length <= 0) {
+            cardapio.metodos.mensagem('Seu carrinho está vazio.')
             return;
-        }
-
-
+        } 
 
         cardapio.metodos.carregarEtapa(2);
+
     },
 
-    //chama api viacep
+    // API ViaCEP
     buscarCep: () => {
 
+        // cria a variavel com o valor do cep
         var cep = $("#txtCEP").val().trim().replace(/\D/g, '');
 
-        if(cep != ""){
+        // verifica se o CEP possui valor informado
+        if (cep != "") {
 
-            //expressão regular para validar o CEP
+            // Expressão regular para validar o CEP
             var validacep = /^[0-9]{8}$/;
 
-            if(validacep.test(cep)){
+            if (validacep.test(cep)) {
 
                 $.getJSON("https://viacep.com.br/ws/" + cep + "/json/?callback=?", function (dados) {
 
-                    if(!("erro" in dados)){
-                        // Atualizar campos com dados recebidos pela api
+                    if (!("erro" in dados)) {
 
+                        // Atualizar os campos com os valores retornados
                         $("#txtEndereco").val(dados.logradouro);
                         $("#txtBairro").val(dados.bairro);
                         $("#txtCidade").val(dados.localidade);
                         $("#ddlUf").val(dados.uf);
-
                         $("#txtNumero").focus();
 
-
-                    }else{
-                        cardapio.metodos.mensagem("CEP não encontrado. Preencha as informações manualmente!")
+                    }
+                    else {
+                        cardapio.metodos.mensagem('CEP não encontrado. Preencha as informações manualmente.');
                         $("#txtEndereco").focus();
                     }
 
                 })
 
-            }else{
-                cardapio.metodos.mensagem("Formato do CEP inválido.")
+            }
+            else {
+                cardapio.metodos.mensagem('Formato do CEP inválido.');
                 $("#txtCEP").focus();
             }
-        }else{
-            cardapio.metodos.mensagem("Informe o CEP, por favor.");
+
+        }
+        else {
+            cardapio.metodos.mensagem('Informe o CEP, por favor.');
             $("#txtCEP").focus();
         }
+
     },
 
-    //validação antes de proseguir para pagamento
+    // validação antes de prosseguir para a etapa 3
     resumoPedido: () => {
-                   
-        let cep = $("#txtEndereco").val().trim();
+
+        let cep = $("#txtCEP").val().trim();
         let endereco = $("#txtEndereco").val().trim();
         let bairro = $("#txtBairro").val().trim();
         let cidade = $("#txtCidade").val().trim();
@@ -414,42 +406,41 @@ cardapio.metodos = {
         let numero = $("#txtNumero").val().trim();
         let complemento = $("#txtComplemento").val().trim();
 
-        if(cep.length <= 0) {
-            cardapio.metodos.mensagem("Informe o CEP, por favor.")
+        if (cep.length <= 0) {
+            cardapio.metodos.mensagem('Informe o CEP, por favor.');
             $("#txtCEP").focus();
             return;
         }
 
-        if(endereco.length <= 0) {
-            cardapio.metodos.mensagem("Informe o Endereço, por favor.")
+        if (endereco.length <= 0) {
+            cardapio.metodos.mensagem('Informe o Endereço, por favor.');
             $("#txtEndereco").focus();
             return;
         }
 
-        if(bairro.length <= 0) {
-            cardapio.metodos.mensagem("Informe o Bairro, por favor.")
+        if (bairro.length <= 0) {
+            cardapio.metodos.mensagem('Informe o Bairro, por favor.');
             $("#txtBairro").focus();
             return;
         }
 
-        if(cidade.length <= 0) {
-            cardapio.metodos.mensagem("Informe a Cidade, por favor.")
+        if (cidade.length <= 0) {
+            cardapio.metodos.mensagem('Informe a Cidade, por favor.');
             $("#txtCidade").focus();
             return;
         }
 
-        if(uf.length == "-1") {
-            cardapio.metodos.mensagem("Informe o Estado (UF), por favor.")
+        if (uf == "-1") {
+            cardapio.metodos.mensagem('Informe a UF, por favor.');
             $("#ddlUf").focus();
             return;
         }
 
-        if(numero.length <= 0) {
-            cardapio.metodos.mensagem("Informe o Número, por favor.")
+        if (numero.length <= 0) {
+            cardapio.metodos.mensagem('Informe o Número, por favor.');
             $("#txtNumero").focus();
             return;
         }
-
 
         MEU_ENDERECO = {
             cep: cep,
@@ -466,79 +457,88 @@ cardapio.metodos = {
 
     },
 
-    //carrega valores na etapa de resumo
+    // carrega a etapa de Resumo do pedido
     carregarResumo: () => {
 
         $("#listaItensResumo").html('');
 
         $.each(MEU_CARRINHO, (i, e) => {
 
-            let temp = cardapio.templates.itemResumo.replace(/\${img}/g,e.img)
-                .replace(/\${nome}/g,e.name)
-                .replace(/\${preco}/g,e.price.toFixed(2).replace('.',','))
-                .replace(/\${qntd}/g,e.qntd);
+            let temp = cardapio.templates.itemResumo.replace(/\${img}/g, e.img)
+                .replace(/\${nome}/g, e.name)
+                .replace(/\${preco}/g, e.price.toFixed(2).replace('.', ','))
+                .replace(/\${qntd}/g, e.qntd)
 
-                $("#listaItensResumo").append(temp);
-        })
+            $("#listaItensResumo").append(temp);
+
+        });
 
         $("#resumoEndereco").html(`${MEU_ENDERECO.endereco}, ${MEU_ENDERECO.numero}, ${MEU_ENDERECO.bairro}`);
-        $("#cidadeEndereco").html(`${MEU_ENDERECO.cidade} - ${MEU_ENDERECO.uf} / ${MEU_ENDERECO.cep} ${MEU_ENDERECO.complemento}`);
+        $("#cidadeEndereco").html(`${MEU_ENDERECO.cidade}-${MEU_ENDERECO.uf} / ${MEU_ENDERECO.cep} ${MEU_ENDERECO.complemento}`);
 
         cardapio.metodos.finalizarPedido();
+
     },
 
-    //atualiza link do botão do whatsapp/envio
+    // Atualiza o link do botão do WhatsApp
     finalizarPedido: () => {
 
-        if(MEU_CARRINHO.length > 0 && MEU_ENDERECO != null){
+        if (MEU_CARRINHO.length > 0 && MEU_ENDERECO != null) {
 
-            var texto = 'Olá, gostaria de fazer um pedido:\n';
-            texto += `\n*Itens do pedido:*\n\n\${itens}`;
+            var texto = 'Olá! gostaria de fazer um pedido:\n';
+            texto += `\n*Itens do pedido:*\n\n\${itens}\n`;
             texto += '\n*Endereço de entrega:*';
             texto += `\n${MEU_ENDERECO.endereco}, ${MEU_ENDERECO.numero}, ${MEU_ENDERECO.bairro}`;
-            texto += `\n${MEU_ENDERECO.cidade} - ${MEU_ENDERECO.uf} / ${MEU_ENDERECO.cep} ${MEU_ENDERECO.complemento}`;
-            texto += `\n\n*Total (com entrega): R$ ${(VALOR_CARRINHO + VALOR_ENTREGA).toFixed(2).replace('.',',')}*`;
+            texto += `\n${MEU_ENDERECO.cidade}-${MEU_ENDERECO.uf} / ${MEU_ENDERECO.cep} ${MEU_ENDERECO.complemento}`;
+            texto += `\n\n*Total (com entrega): R$ ${(VALOR_CARRINHO + VALOR_ENTREGA).toFixed(2).replace('.', ',')}*`;
 
             var itens = '';
 
             $.each(MEU_CARRINHO, (i, e) => {
-                itens += `*${e.qntd}x* ${e.name} ....... R$ ${e.price.toFixed(2).replace('.',',')} \n`;
 
-                //ultimo item
-                if((i +1) == MEU_CARRINHO.length){
-                    texto = texto.replace(/\${itens}/g, itens)
+                itens += `*${e.qntd}x* ${e.name} ....... R$ ${e.price.toFixed(2).replace('.', ',')} \n`;
 
-                    //converter texto em URL
-                    let encodeTexto = encodeURI(texto);
-                    let URL = `https://wa.me/${NUMERO_ENVIO}?text=${encodeTexto}`;
+                // último item
+                if ((i + 1) == MEU_CARRINHO.length) {
 
-                    $("#btnEtapaResumo").attr('href',URL);
+                    texto = texto.replace(/\${itens}/g, itens);
+
+                    // converte a URL
+                    let encode = encodeURI(texto);
+                    let URL = `https://wa.me/${CELULAR_EMPRESA}?text=${encode}`;
+
+                    $("#btnEtapaResumo").attr('href', URL);
+
                 }
+
             })
 
         }
 
     },
 
-    //carrega link do botao reserva
+    // carrega o link do botão reserva
     carregarBotaoReserva: () => {
 
-        var texto = 'Olá gostaria de fazer uma *reserva*.';
+        var texto = 'Olá! gostaria de fazer uma *reserva*';
 
-        let encode = encodeURI(texto)
-        let URL = `https://wa.me/${NUMERO_ENVIO}?text=${encodeTexto}`;
+        let encode = encodeURI(texto);
+        let URL = `https://wa.me/${CELULAR_EMPRESA}?text=${encode}`;
 
-        $("#btnReserva").attr('href',URL);
+        $("#btnReserva").attr('href', URL);
 
     },
 
-    //carrega botão de ligar
+    // carrega o botão de ligar
     carregarBotaoLigar: () => {
-        $("#btnLigar").attr('href', `tel:${NUMERO_ENVIO}`)
+
+        $("#btnLigar").attr('href', `tel:${CELULAR_EMPRESA}`);
+
     },
 
-    //abre depoimento mediante clique
+    // abre o depoimento
     abrirDepoimento: (depoimento) => {
+
         $("#depoimento-1").addClass('hidden');
         $("#depoimento-2").addClass('hidden');
         $("#depoimento-3").addClass('hidden');
@@ -552,39 +552,34 @@ cardapio.metodos = {
 
     },
 
-    //exibir mensagem personalizada
-    mensagem: (texto,cor = 'red', tempo = 3500) => {
+    // mensagens
+    mensagem: (texto, cor = 'red', tempo = 3500) => {
 
-        //criando ID aleatório de acordo com a data atual
         let id = Math.floor(Date.now() * Math.random()).toString();
 
-        //criando template com classes de animação
         let msg = `<div id="msg-${id}" class="animated fadeInDown toast ${cor}">${texto}</div>`;
 
-        //adicionando msg a container
         $("#container-mensagens").append(msg);
 
-        //sumir mensagem apos tempo
         setTimeout(() => {
-            //Fazendo animação com fadein e fadeOut
-            $("#msg-"+ id).removeClass('fadeInDown');
-            $("#msg-"+ id).addClass('fadeOutUp');
-            //depois da animação, remove de fato a mensagem da estrutura html
-            setTimeout(()=>{
-                $("#msg-"+ id).remove();                
-            },800);
-        },tempo);
+            $("#msg-" + id).removeClass('fadeInDown');
+            $("#msg-" + id).addClass('fadeOutUp');
+            setTimeout(() => {
+                $("#msg-" + id).remove();
+            }, 800);
+        }, tempo)
 
-    },
+    }
+
 }
 
 cardapio.templates = {
 
     item: `
-        <div class="col-3 mb-4 wow fadeInUp">
+        <div class="col-12 col-lg-3 col-md-3 col-sm-6 mb-5 animated fadeInUp">
             <div class="card card-item" id="\${id}">
                 <div class="img-produto">
-                    <img src="\${img}" alt="">
+                    <img src="\${img}" />
                 </div>
                 <p class="title-produto text-center mt-4">
                     <b>\${nome}</b>
@@ -605,7 +600,7 @@ cardapio.templates = {
     itemCarrinho: `
         <div class="col-12 item-carrinho">
             <div class="img-produto">
-                <img src="\${img}" >
+                <img src="\${img}" />
             </div>
             <div class="dados-produto">
                 <p class="title-produto"><b>\${nome}</b></p>
@@ -615,7 +610,7 @@ cardapio.templates = {
                 <span class="btn-menos" onclick="cardapio.metodos.diminuirQuantidadeCarrinho('\${id}')"><i class="fas fa-minus"></i></span>
                 <span class="add-numero-itens" id="qntd-carrinho-\${id}">\${qntd}</span>
                 <span class="btn-mais" onclick="cardapio.metodos.aumentarQuantidadeCarrinho('\${id}')"><i class="fas fa-plus"></i></span>
-                <span class="btn btn-remove" onclick="cardapio.metodos.removerItemCarrinho('\${id}')"><i class="fa fa-times"></i></span>
+                <span class="btn btn-remove no-mobile" onclick="cardapio.metodos.removerItemCarrinho('\${id}')"><i class="fa fa-times"></i></span>
             </div>
         </div>
     `,
@@ -623,7 +618,7 @@ cardapio.templates = {
     itemResumo: `
         <div class="col-12 item-carrinho resumo">
             <div class="img-produto-resumo">
-                <img src="\${img}">
+                <img src="\${img}" />
             </div>
             <div class="dados-produto">
                 <p class="title-produto-resumo">
@@ -638,4 +633,5 @@ cardapio.templates = {
             </p>
         </div>
     `
+
 }
